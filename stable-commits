@@ -4,12 +4,13 @@
 
 # hypervisor commit
 KERNEL_GIT_URL="https://github.com/jepio/linux.git"
-KERNEL_HOST_BRANCH="nested-snp-upm-20240123"
-KERNEL_GUEST_BRANCH="v6.7"
+KERNEL_HOST_BRANCH="azure-snp-host-202402240000"
+# Unmodified upstream kernels 5.19+ also work
+KERNEL_GUEST_BRANCH="amd-snp-guest-202402240000"
 
 # qemu commit
-QEMU_GIT_URL="https://github.com/AMDESE/qemu.git"
-QEMU_BRANCH="snp-v3-wip"
+QEMU_GIT_URL="https://github.com/confidential-containers/qemu.git"
+QEMU_BRANCH="amd-snp-202402240000"
 
 # guest bios
 #   An AP creation fix added after the 'edk2-stable202302' tag/release is
