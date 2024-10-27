@@ -9,7 +9,7 @@ KERNEL_GUEST_BRANCH="v6.7"
 
 # qemu commit
 QEMU_GIT_URL="https://github.com/AMDESE/qemu.git"
-QEMU_BRANCH="snp-latest"
+QEMU_BRANCH="snp-v3-wip"
 
 # guest bios
 #   An AP creation fix added after the 'edk2-stable202302' tag/release is
@@ -19,5 +19,8 @@ QEMU_BRANCH="snp-latest"
 #   please use the 'sev-snp-legacy' branch of this AMDSEV repo instead,
 #   which will build the latest known-working QEMU/OVMF trees for older
 #   SNP hypervisor/host kernels.
-OVMF_GIT_URL="https://github.com/AMDESE/ovmf.git"
-OVMF_BRANCH="snp-latest"
+#
+#   AMD upstream has switched to different page types for portions of
+#   OVMF, so stick to a known-good tag, also used by CoCo.
+OVMF_GIT_URL="https://github.com/tianocore/edk2.git"
+OVMF_BRANCH="edk2-stable202402"
