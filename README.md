@@ -3,16 +3,20 @@ SEV-SNP isolated nested guests using KVM on Azure's DCa_cc_v5/ECa_cc_v5 instance
 
 ## Deploy an Azure VM
 
-A preconfigured VM image based on Ubuntu 20.04 has been published to a publicly accessible
-community gallery for quick validation. The VM gallery image is present in East US.
+A preconfigured VM image based on Ubuntu 22.04 has been published to a publicly accessible
+community gallery for quick validation. The VM gallery image is present in East US & West Europe.
 
 Deploy the SNP host VM using azure cli:
 ```
 az group create -g <group> -l eastus
 az vm create -g <group> -n <name> \
-  --image /CommunityGalleries/cocopreview-91c44057-c3ab-4652-bf00-9242d5a90170/Images/ubuntu2004-snp-host/Versions/latest \
+  --image /CommunityGalleries/cocopreview-91c44057-c3ab-4652-bf00-9242d5a90170/Images/ubu2204-snp-host-upm/Versions/latest \
   --accept-term --size Standard_DC8as_cc_v5 --accelerated-networking true
 ```
+
+The latest published image is based on the [v2024.02.07](https://github.com/jepio/AMDSEV/releases/tag/v2024.02.07) tag.
+The image was tested with Confidential Containers v0.7.0.
+For CoCo v0.10.0 support, install the deb packages from [v2024.02.24](https://github.com/jepio/AMDSEV/releases/tag/v2024.02.24).
 
 ## Verify SNP functionality
 
@@ -21,36 +25,48 @@ Once the VM has been provisioned, ssh into it.
 Check dmesg for correct SNP initialization in the SNP host VM:
 ```
 $ uname -r
-5.19.0-rc6-snp-host-46751c721588
+6.7.0-rc6-next-20231222-snp-host-0fcebf5ce3fe
 
 $ sudo dmesg | grep -Ee 'SEV|SNP|ccp|kvm'
-[    0.647052] SEV-SNP: RMP table physical address 0x00000008b7300000 - 0x00000008bfffffff
-[    2.137453] ccp psp: sev enabled
-[    2.137499] ccp psp: psp enabled
-[    2.137501] ccp psp: enabled
-[    2.143452] ccp psp: SEV: failed to INIT error 0x11, rc -5
-[    2.145240] ccp psp: SEV-SNP API:1.42 build:42
-[    2.446670] kvm: Nested Virtualization enabled
-[    2.446671] SVM: kvm: Nested Paging enabled
-[    2.446676] SEV supported: 0 ASIDs
-[    2.446677] SEV-ES and SEV-SNP supported: 16 ASIDs
-[    2.446678] SVM: kvm: Hyper-V enlightened NPT TLB flush enabled
-[    2.446678] SVM: kvm: Hyper-V Direct TLB Flush enabled
+[    0.019266] SEV-SNP: RMP table physical range [0x00000008b7300000 - 0x00000008bfffffff]
+[    3.002517] ccp psp: sev enabled
+[    3.002583] ccp psp: psp enabled
+[    3.002587] ccp psp: enabled
+[    3.021999] ccp psp: SEV-SNP API:1.42 build:42
+[    3.439977] kvm_amd: TSC scaling supported
+[    3.439982] kvm_amd: Nested Virtualization enabled
+[    3.439983] kvm_amd: Nested Paging enabled
+[    3.439989] kvm_amd: SEV enabled (ASIDs 17 - 16)
+[    3.439992] kvm_amd: SEV-ES enabled (ASIDs 1 - 16)
+[    3.439993] kvm_amd: SEV-SNP enabled (ASIDs 1 - 16)
+[    3.439995] kvm_amd: kvm_amd: Hyper-V enlightened NPT TLB flush enabled
+[    3.439996] kvm_amd: kvm_amd: Hyper-V Direct TLB Flush enabled
+[    3.440006] kvm_amd: Virtual VMLOAD VMSAVE supported
+[    3.440007] kvm_amd: PMU virtualization is disabled
+
 ```
 
 Only SEV-SNP is supported, not SEV or SEV-ES (hence the "SEV: failed to init" error).
 
 Double check support using snphost (https://github.com/virtee/snphost):
 ```
-$ sudo snphost ok
+$ sudo modprobe msr
+$ sudo ./target/release/snphost ok
 [ PASS ] - AMD CPU
 [ PASS ]   - Microcode support
 [ PASS ]   - Secure Memory Encryption (SME)
+[ PASS ]     - SME: Enabled in MSR
 [ PASS ]   - Secure Encrypted Virtualization (SEV)
 [ PASS ]     - Encrypted State (SEV-ES)
+[ FAIL ]       - SEV-ES INIT: Disabled
+[ FAIL ]     - SEV INIT: SEV is UNINIT
 [ PASS ]     - Secure Nested Paging (SEV-SNP)
 [ PASS ]       - VM Permission Levels
 [ PASS ]         - Number of VMPLs: 4
+[ PASS ]       - SNP: Enabled in MSR
+[ FAIL ]       - SEV Firmware Version: SEV firmware version needs to be at least 1.51,
+                            current firmware version: 1.42
+[ PASS ]       - SNP INIT: SNP is INIT
 [ PASS ]     - Physical address bit reduction: 5
 [ PASS ]     - C-bit location: 51
 [ PASS ]     - Number of encrypted guests supported simultaneously: 16
@@ -62,18 +78,41 @@ $ sudo snphost ok
 [ PASS ]   - SEV enabled in KVM: enabled
 [ PASS ]   - SEV-ES enabled in KVM: enabled
 [ PASS ]   - SEV-SNP enabled in KVM: enabled
-[ PASS ] - Memlock resource limit: Soft: 67108864 | Hard: 67108864
+[ PASS ] - Memlock resource limit: Soft: 4190076928 | Hard: 4190076928
+[ PASS ] - RMP table addresses: Addresses: 37433114624 - 37580963839
+[ PASS ] - RMP INIT: RMP is INIT
+[ PASS ] - Comparing TCB values: TCB versions match
+
+ Platform TCB version:
+TCB Version:
+  Microcode:   211
+  SNP:         21
+  TEE:         0
+  Boot Loader: 4
+
+ Reported TCB version:
+TCB Version:
+  Microcode:   211
+  SNP:         21
+  TEE:         0
+  Boot Loader: 4
+
+ERROR: One or more tests in sevctl-ok reported a failure
+Error: One or more tests in sevctl-ok reported a failure
 ```
+
+The above failures are expected: Azure DCaccv5 instances support SEV-SNP only
+(no SEV or SEV-ES) and the SEV firmware version reported is fixed at v1.42.
 
 ## Start Qemu SNP guest
 
 A script is provided that boots an SNP isolated nested guest using qemu with
 SNP support. Inspect the output for the required CLI flags.
 ```
-$ sudo launch-qemu.sh -sev-snp -smp 1 -mem 1024
+$ sudo launch-qemu.sh -sev-snp -smp 1 -mem 1024 -overlay
 ```
 
-Login to the SNP isolateed nested guest using username `root` (no password)
+Login to the SNP isolated nested guest using username `root` (no password)
 
 Check dmesg for correct SEV-SNP initialization:
 ```
