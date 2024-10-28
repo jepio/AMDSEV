@@ -191,8 +191,8 @@ build_install_ovmf()
 	fi
 
 	pushd ovmf >/dev/null
-		run_cmd git fetch current
-		run_cmd git checkout current/${OVMF_BRANCH}
+		run_cmd git fetch current ${OVMF_BRANCH}
+		run_cmd git checkout FETCH_HEAD
 		run_cmd git submodule update --init --recursive
 		run_cmd make -C BaseTools
 		. ./edksetup.sh --reconfig
@@ -230,8 +230,8 @@ build_install_qemu()
 	MAKE="make -j $(getconf _NPROCESSORS_ONLN) LOCALVERSION="
 
 	pushd qemu >/dev/null
-		run_cmd git fetch current
-		run_cmd git checkout current/${QEMU_BRANCH}
+		run_cmd git fetch current ${QEMU_BRANCH}
+		run_cmd git checkout FETCH_HEAD
 		run_cmd ./configure --target-list=x86_64-softmmu --prefix=$DEST
 		run_cmd $MAKE
 		run_cmd $MAKE install
